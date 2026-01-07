@@ -99,18 +99,18 @@ export class CertificateService {
       const pageWidth = doc.page.width;
       const black = "#000000";
 
-      doc.fillColor(black).fontSize(40).font("Helvetica-Bold").text("CERTIFICADO DE FINALIZACIÓN", centerX, 140, { align: "center", width: pageWidth });
+      doc.fillColor(black).fontSize(40).font("Helvetica-Bold").text("CERTIFICADO DE FINALIZACIÓN", centerX, 160, { align: "center", width: pageWidth });
 
-      doc.fillColor(black).fontSize(20).font("Helvetica").text("Se certifica que", centerX, 195, { align: "center", width: pageWidth });
+      doc.fillColor(black).fontSize(20).font("Helvetica").text("Se certifica que", centerX, 215, { align: "center", width: pageWidth });
 
-      doc.fillColor(FUDMASTER_COLORS.PRIMARY).fontSize(35).font("Helvetica-Bold").text(studentName.toUpperCase(), centerX, 225, { align: "center", width: pageWidth });
+      doc.fillColor(FUDMASTER_COLORS.PRIMARY).fontSize(35).font("Helvetica-Bold").text(studentName.toUpperCase(), centerX, 245, { align: "center", width: pageWidth });
 
-      doc.fillColor(black).fontSize(18).font("Helvetica").text("ha completado con éxito el curso", centerX, 275, { align: "center", width: pageWidth });
+      doc.fillColor(black).fontSize(18).font("Helvetica").text("ha completado con éxito el curso", centerX, 295, { align: "center", width: pageWidth });
 
-      doc.fillColor(black).fontSize(30).font("Helvetica-Bold").text(courseName, centerX, 305, { align: "center", width: pageWidth });
+      doc.fillColor(black).fontSize(30).font("Helvetica-Bold").text(courseName, centerX, 325, { align: "center", width: pageWidth });
 
       // Date - Moved down to avoid overlap
-      doc.fillColor(black).fontSize(14).font("Helvetica").text(`Fecha de emisión: ${date.toLocaleDateString("es-ES")}`, centerX, 385, { align: "center", width: pageWidth });
+      doc.fillColor(black).fontSize(14).font("Helvetica").text(`Fecha de emisión: ${date.toLocaleDateString("es-ES")}`, centerX, 405, { align: "center", width: pageWidth });
 
       // Signatures
       const signatureY = 430;
