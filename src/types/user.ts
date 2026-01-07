@@ -46,16 +46,16 @@ export interface IUser {
   genderOther?: string | null;
   dateOfBirth?: Date | null;
   heardAboutUs?:
-    | "social_media_ad"
-    | "friend_colleague"
-    | "search_engine"
-    | "online_article_blog"
-    | "youtube_video"
-    | "podcast"
-    | "event_webinar"
-    | "email_campaign"
-    | "teachable_marketplace"
-    | "other";
+  | "social_media_ad"
+  | "friend_colleague"
+  | "search_engine"
+  | "online_article_blog"
+  | "youtube_video"
+  | "podcast"
+  | "event_webinar"
+  | "email_campaign"
+  | "teachable_marketplace"
+  | "other";
   heardAboutUsOther?: string | null;
   courses: CourseAccess[];
   careers: CareerAccess[];
@@ -64,6 +64,8 @@ export interface IUser {
   recoveryToken?: string | null;
   recoveryTokenExpires?: Date | null;
   accountType: "free" | "premium" | "student" | "founder";
+  role?: "user" | "admin";
+  city?: string | null;
   completedLectures: CompletedLecture[];
   createdAt?: Date;
   updatedAt?: Date;

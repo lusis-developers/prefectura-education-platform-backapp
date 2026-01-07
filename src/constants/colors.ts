@@ -27,4 +27,8 @@ export const FUDMASTER_COLORS = {
   ALERT_INFO_BG: "rgba(59, 130, 246, 0.1)",
   ALERT_SUCCESS_BG: "rgba(16, 185, 129, 0.1)",
   ALERT_ERROR_BG: "rgba(239, 68, 68, 0.1)",
+
+  // Missing constants for email template
+  LIGHT: "#f8fafc",
+  BLUE: "#2563EB",
 };

@@ -83,6 +83,8 @@ const UserSchema = new Schema<IUser>(
     recoveryToken: { type: String, default: null },
     recoveryTokenExpires: { type: Date, default: null },
     accountType: { type: String, enum: ["free", "premium", "student", "founder"], default: "free" },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
+    city: { type: String, default: null },
     completedLectures: { type: [CompletedLectureSchema], default: [] },
   },
   { timestamps: true, versionKey: false },

@@ -27,6 +27,31 @@ function extractTeachableUserId(resp: unknown): number | undefined {
   return typeof id === "number" ? id : undefined;
 }
 
+function toSafeUser(user: any) {
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    teachableUserId: user.teachableUserId,
+    gender: user.gender,
+    genderOther: user.genderOther,
+    dateOfBirth: user.dateOfBirth,
+    heardAboutUs: user.heardAboutUs,
+    heardAboutUsOther: user.heardAboutUsOther,
+    points: user.points || 0,
+    courses: user.courses || [],
+    careers: user.careers || [],
+    payments: user.payments || [],
+    transactions: user.transactions || [],
+    accountType: user.accountType || "free",
+    role: user.role || "user",
+    city: user.city || null,
+    completedLectures: user.completedLectures || [],
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
+
 export async function createUser(
   req: Request,
   res: Response,
@@ -72,22 +97,7 @@ export async function createUser(
       }
     }
 
-    const safeUser = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      teachableUserId: user.teachableUserId,
-      gender: user.gender,
-      genderOther: user.genderOther,
-      dateOfBirth: user.dateOfBirth,
-      heardAboutUs: user.heardAboutUs,
-      heardAboutUsOther: user.heardAboutUsOther,
-      courses: user.courses,
-      careers: user.careers,
-      payments: user.payments,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    const safeUser = toSafeUser(user);
 
     res.status(HttpStatusCode.Created).send({ message: "User created successfully.", user: safeUser });
     return;
@@ -227,25 +237,7 @@ export async function getUserById(
       return;
     }
 
-    const safeUser = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      teachableUserId: user.teachableUserId,
-      gender: user.gender,
-      genderOther: user.genderOther,
-      dateOfBirth: user.dateOfBirth,
-      heardAboutUs: user.heardAboutUs,
-      heardAboutUsOther: user.heardAboutUsOther,
-      points: user.points,
-      courses: user.courses,
-      careers: user.careers,
-      payments: user.payments,
-      transactions: user.transactions,
-      accountType: user.accountType || "free",
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    const safeUser = toSafeUser(user);
 
     res.status(HttpStatusCode.Ok).send({ message: "User retrieved successfully.", user: safeUser });
     return;
@@ -343,27 +335,12 @@ export async function loginUser(
     }
 
     const token = jwt.sign(
-      { sub: user._id.toString(), email: user.email },
+      { id: user._id.toString(), email: user.email, role: user.role || "user" },
       secret,
       { expiresIn: "7d" },
     );
 
-    const safeUser = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      teachableUserId: user.teachableUserId,
-      gender: user.gender,
-      genderOther: user.genderOther,
-      dateOfBirth: user.dateOfBirth,
-      heardAboutUs: user.heardAboutUs,
-      heardAboutUsOther: user.heardAboutUsOther,
-      courses: user.courses,
-      careers: user.careers,
-      payments: user.payments,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    const safeUser = toSafeUser(user);
 
     // Auto-enroll founder if needed
     if (user.accountType === "founder") {
@@ -416,23 +393,7 @@ export async function registerFromPayment(
 
     const { user, isNew } = result;
 
-    const safeUser = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      teachableUserId: user.teachableUserId,
-      gender: user.gender,
-      genderOther: user.genderOther,
-      dateOfBirth: user.dateOfBirth,
-      heardAboutUs: user.heardAboutUs,
-      heardAboutUsOther: user.heardAboutUsOther,
-      courses: user.courses,
-      careers: user.careers,
-      payments: user.payments,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      accountType: user.accountType || "free"
-    };
+    const safeUser = toSafeUser(user);
 
     // Auto-enroll founder if needed
     if (user.accountType === "founder") {
@@ -557,24 +518,7 @@ export async function updateUser(
 
     await user.save();
 
-    const safeUser = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      teachableUserId: user.teachableUserId,
-      gender: user.gender,
-      genderOther: user.genderOther,
-      dateOfBirth: user.dateOfBirth,
-      heardAboutUs: user.heardAboutUs,
-      heardAboutUsOther: user.heardAboutUsOther,
-      points: user.points,
-      courses: user.courses,
-      careers: user.careers,
-      payments: user.payments,
-      transactions: user.transactions,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    const safeUser = toSafeUser(user);
 
     res.status(HttpStatusCode.Ok).send({ message: "User updated successfully.", user: safeUser });
     return;
@@ -732,18 +676,7 @@ export async function grantManualAccess(
       await emailService.sendTemporaryPassword(email, name, password);
     }
 
-    const safeUser = {
-      _id: user!._id,
-      name: user!.name,
-      email: user!.email,
-      teachableUserId: user!.teachableUserId,
-      courses: user!.courses,
-      careers: user!.careers,
-      payments: user.payments,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      accountType: user.accountType || "free"
-    };
+    const safeUser = toSafeUser(user);
 
     res.status(HttpStatusCode.Ok).send({
       message: "Manual access granted successfully.",
@@ -957,34 +890,122 @@ export async function loginWithGoogle(
     }
 
     const jwtToken = jwt.sign(
-      { sub: user._id.toString(), email: user.email },
+      { id: user._id.toString(), email: user.email, role: user.role || "user" },
       secret,
       { expiresIn: "7d" },
     );
 
-    const safeUser = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      teachableUserId: user.teachableUserId,
-      gender: user.gender,
-      genderOther: user.genderOther,
-      dateOfBirth: user.dateOfBirth,
-      heardAboutUs: user.heardAboutUs,
-      heardAboutUsOther: user.heardAboutUsOther,
-      courses: user.courses,
-      careers: user.careers,
-      payments: user.payments,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      accountType: user.accountType || "free",
-      picture // pass back picture if needed by frontend
-    };
+    const safeUser = { ...toSafeUser(user), picture };
 
     res.status(HttpStatusCode.Ok).send({ message: "Login successful.", token: jwtToken, user: safeUser });
     return;
   } catch (error) {
     console.error("Error logging in with Google", error);
+    res.status(HttpStatusCode.InternalServerError).send({ message: "Internal server error." });
+    return;
+  }
+}
+
+export async function seedMockData(_req: Request, res: Response): Promise<void> {
+  try {
+    // 1. Create Director (Admin)
+    const directorEmail = "director@sambo.gob.ec";
+    const existingDirector = await models.users.findOne({ email: directorEmail });
+    if (!existingDirector) {
+      await models.users.create({
+        name: "Director de Educación",
+        email: directorEmail,
+        password: "DirectorPassword2026!",
+        role: "admin",
+        accountType: "founder",
+        city: "Samborondon",
+      });
+    }
+
+    // 2. Generate 20 mock users
+    const cities = ["Guayaquil", "Manabi", "Samborondon", "Daule", "Salitre"];
+    const names = [
+      "Juan Perez",
+      "Maria Garcia",
+      "Carlos Lopez",
+      "Ana Martinez",
+      "Luis Rodriguez",
+      "Elena Gomez",
+      "Diego Vaca",
+      "Laura Castro",
+      "Pedro Solano",
+      "Rosa Mejía",
+    ];
+
+    for (let i = 0; i < 20; i++) {
+      const email = `user${i}@example.com`;
+      const existing = await models.users.findOne({ email });
+      if (existing) continue;
+
+      const user = await models.users.create({
+        name: `${names[i % names.length]} Mock`,
+        email,
+        password: "Password123!",
+        role: "user",
+        accountType: i % 3 === 0 ? "premium" : "free",
+        city: cities[i % cities.length],
+        points: Math.floor(Math.random() * 1000),
+      });
+
+      // Mock some certificates
+      if (i % 2 === 0) {
+        await models.certificates.create({
+          userRef: user._id,
+          quizRef: new Types.ObjectId(), // Fake quiz ref
+          pdfUrl: "https://example.com/cert.pdf",
+        });
+      }
+    }
+
+    res.status(HttpStatusCode.Ok).send({ message: "Mock data seeded successfully." });
+    return;
+  } catch (error) {
+    console.error("Error seeding mock data", error);
+    res.status(HttpStatusCode.InternalServerError).send({ message: "Internal server error." });
+    return;
+  }
+}
+
+export async function getAdminStats(_req: Request, res: Response): Promise<void> {
+  try {
+    const totalUsers = await models.users.countDocuments({ role: "user" });
+    const totalCertificates = await models.certificates.countDocuments();
+
+    const cityDistribution = await models.users.aggregate([
+      { $match: { role: "user" } },
+      { $group: { _id: "$city", count: { $sum: 1 } } },
+    ]);
+
+    const accountTypeDistribution = await models.users.aggregate([
+      { $match: { role: "user" } },
+      { $group: { _id: "$accountType", count: { $sum: 1 } } },
+    ]);
+
+    // Regularity (Certificates per user or similar)
+    const topUsers = await models.users
+      .find({ role: "user" })
+      .sort({ points: -1 })
+      .limit(5)
+      .select("name email points city");
+
+    res.status(HttpStatusCode.Ok).send({
+      message: "Statistics retrieved successfully.",
+      stats: {
+        totalUsers,
+        totalCertificates,
+        cityDistribution,
+        accountTypeDistribution,
+        topUsers,
+      },
+    });
+    return;
+  } catch (error) {
+    console.error("Error fetching admin stats", error);
     res.status(HttpStatusCode.InternalServerError).send({ message: "Internal server error." });
     return;
   }

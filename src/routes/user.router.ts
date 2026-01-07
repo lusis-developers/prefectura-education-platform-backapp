@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { createUser, loginUser, registerFromPayment, getUserById, checkUserByEmail, updateUser, changePassword, getUsers, grantManualAccess, requestPasswordRecovery, resetPassword, loginWithGoogle, deleteUser } from "../controllers/user.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 import { verifyFirebaseToken } from "../middlewares/firebaseAuth.middleware";
 
 const userRouter = Router();
