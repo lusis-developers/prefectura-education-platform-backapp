@@ -4,6 +4,7 @@ import type { ICareer } from "../types/career";
 const CareerSchema = new Schema<ICareer>(
   {
     name: { type: String, required: true },
+    slogan: { type: String, default: null },
     description: { type: String, default: null },
     imageUrl: { type: String, default: null },
     isActive: { type: Boolean, default: true },

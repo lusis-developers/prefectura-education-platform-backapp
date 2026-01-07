@@ -10,7 +10,7 @@ function parsePositiveNumber(value: any): number | undefined {
   return n;
 }
 
- 
+
 
 export async function createCareer(
   req: Request,
@@ -18,7 +18,7 @@ export async function createCareer(
   _next: NextFunction,
 ): Promise<void> {
   try {
-    const { name, description, imageUrl, courseIds } = (req.body || {}) as Record<string, any>;
+    const { name, slogan, description, imageUrl, courseIds } = (req.body || {}) as Record<string, any>;
     const valueName = typeof name === "string" ? name.trim() : "";
     if (!valueName) {
       res.status(HttpStatusCode.BadRequest).send({ message: "Invalid payload. Name is required." });
@@ -35,7 +35,7 @@ export async function createCareer(
       ? courseIds.map((v: any) => Number(v)).filter((n: number) => Number.isFinite(n) && n > 0)
       : [];
 
-    const created = await models.careers.create({ name: valueName, description: description ?? null, imageUrl: imageUrl ?? null, courseIds: parsedCourseIds, isActive: true });
+    const created = await models.careers.create({ name: valueName, slogan: slogan ?? null, description: description ?? null, imageUrl: imageUrl ?? null, courseIds: parsedCourseIds, isActive: true });
 
     res.status(HttpStatusCode.Created).send({ message: "Career created successfully.", career: created });
     return;
@@ -265,7 +265,7 @@ export async function assignCareerToUser(
       for (const cid of courseIds) {
         try {
           await usersService.enrollUser({ user_id: finalTeachableUserId, course_id: cid } as any);
-        } catch (_err) {}
+        } catch (_err) { }
       }
       // reflect locally
       const freshUser = await models.users.findById(userId);
@@ -325,7 +325,7 @@ export async function enrollUserToCareerCourses(
     for (const cid of courseIds) {
       try {
         await usersService.enrollUser({ user_id: finalTeachableUserId, course_id: cid } as any);
-      } catch (_err) {}
+      } catch (_err) { }
     }
 
     const user = await models.users.findById(userId);
@@ -383,6 +383,65 @@ export async function getUserCareers(
     return;
   } catch (error: any) {
     console.error("Error fetching user careers", error);
+    res.status(error?.status || HttpStatusCode.InternalServerError).send({ message: error?.message || "Internal server error." });
+    return;
+  }
+}
+
+export async function seedCareers(
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+): Promise<void> {
+  try {
+    const requestedCareers = [
+      {
+        name: "Programa Intensivo de Dominios Científicos y Matemáticos",
+        slogan: "Domina la lógica detrás de las ciencias exactas y naturales.",
+        description: "Esta ruta está diseñada para estudiantes que se están preparando para pruebas de admisión, enfocándose en los dominios evaluados frecuentemente.",
+        courseIds: [2927923, 2927931, 2927866, 2927928],
+        imageUrl: "https://uploads.teachablecdn.com/attachments/ddee34ab49b74b2a9ea3d8a313120585.jpeg"
+      },
+      {
+        name: "Desarrollo del Pensamiento Crítico y Razonamiento Cuantitativo",
+        slogan: "Aprende a pensar, analizar y deducir, no solo a memorizar.",
+        description: "Esta ruta pone el énfasis no tanto en la materia en sí, sino en cómo pensar: lógica, descarte de opciones e intuición.",
+        courseIds: [2927923, 2927928, 2927931, 2927866],
+        imageUrl: "https://uploads.teachablecdn.com/attachments/47828b718c6a4da889e1d19f29ea1b83.png"
+      },
+      {
+        name: "Fundamentos STEM: Ciencias Exactas y Naturales",
+        slogan: "Una visión integral del universo: desde el átomo hasta el ecosistema.",
+        description: "Una ruta académica y formal, ideal como complemento al colegio o universidad, presentando las ciencias como un todo integrado.",
+        courseIds: [2927866, 2927928, 2927923, 2927931],
+        imageUrl: "https://uploads.teachablecdn.com/attachments/4ef1f5800d2e41c4858f55adc405abe1.png"
+      }
+    ];
+
+    const results = [];
+    for (const data of requestedCareers) {
+      const existing = await models.careers.findOne({ name: data.name });
+      if (existing) {
+        existing.slogan = data.slogan;
+        existing.description = data.description;
+        existing.courseIds = data.courseIds;
+        existing.imageUrl = data.imageUrl;
+        existing.isActive = true;
+        await existing.save();
+        results.push({ name: data.name, action: "updated" });
+      } else {
+        await models.careers.create({ ...data, isActive: true });
+        results.push({ name: data.name, action: "created" });
+      }
+    }
+
+    res.status(HttpStatusCode.Ok).send({
+      message: "Careers seeded successfully.",
+      results
+    });
+    return;
+  } catch (error: any) {
+    console.error("Error seeding careers", error);
     res.status(error?.status || HttpStatusCode.InternalServerError).send({ message: error?.message || "Internal server error." });
     return;
   }
