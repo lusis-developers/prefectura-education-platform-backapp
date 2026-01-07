@@ -40,7 +40,7 @@ export default function createApp() {
   app.use(express.json({ limit: "50mb" }));
 
   app.get("/", (_req, res: Response) => {
-    res.send("fudmaster backend IS ALIVEEEEEEE:)");
+    res.send("PREFECTURA GUAYAS EDUCATION PLATFORM backend IS ALIVEEEEEEE:)");
   });
 
   routerApi(app);

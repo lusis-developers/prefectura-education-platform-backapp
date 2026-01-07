@@ -9,7 +9,7 @@ async function dbConnect(): Promise<void> {
     }
 
     await mongoose.connect(DB_URI);
-    console.log("*** SUCCESSFULLY CONNECTED TO DATABASE FUDMASTER FRIENDDD  ***");
+    console.log("*** SUCCESSFULLY CONNECTED TO DATABASE PREFECTURA GUAYAS EDUCATION PLATFORM ***");
   } catch (error) {
     console.log("*** CONECTION FAILED ***", error);
   }
