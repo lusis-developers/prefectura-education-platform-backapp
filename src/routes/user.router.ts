@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUser, loginUser, registerFromPayment, getUserById, checkUserByEmail, updateUser, changePassword, getUsers, grantManualAccess, requestPasswordRecovery, resetPassword, loginWithGoogle, deleteUser, upgradeAllToFounder } from "../controllers/user.controller";
+import { createUser, loginUser, registerFromPayment, getUserById, checkUserByEmail, updateUser, changePassword, getUsers, grantManualAccess, requestPasswordRecovery, resetPassword, loginWithGoogle, deleteUser } from "../controllers/user.controller";
 import { verifyFirebaseToken } from "../middlewares/firebaseAuth.middleware";
 
 const userRouter = Router();
@@ -16,10 +16,6 @@ userRouter.get("/exists", checkUserByEmail);
 userRouter.get("/:userId", getUserById);
 userRouter.patch("/:userId", updateUser);
 userRouter.patch("/:userId/password", changePassword);
-// Route to delete a single user and all related data (transactions, submissions, comments, certificates)
 userRouter.delete("/:userId", deleteUser);
-
-// Route to upgrade ALL users to founder
-userRouter.post("/upgrade-all-founder", upgradeAllToFounder);
 
 export default userRouter;

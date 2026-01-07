@@ -76,7 +76,7 @@ export class PaymentService {
       // User request: "solo cambiarle el estado de free a founder"
       // We will force set it to founder as requested.
       user.accountType = "founder";
-      
+
       await user.save();
 
       // 3. Enroll in ALL available courses
@@ -88,7 +88,7 @@ export class PaymentService {
           const courseIds = allCourses
             .filter(c => c.is_published && c.id)
             .map(c => c.id);
-          
+
           await this.enrollUserInCourses(user, undefined, courseIds);
         }
       } catch (error) {
@@ -106,9 +106,9 @@ export class PaymentService {
       }
 
       const password = randomPassword(12);
-      user = await models.users.create({ 
-        name, 
-        email, 
+      user = await models.users.create({
+        name,
+        email,
         password,
         accountType: "founder" // All paid registrations are founder
       });
@@ -132,16 +132,16 @@ export class PaymentService {
         const coursesResponse = await teachableCoursesService.listCourses();
         let courseIds: number[] = [];
         if (coursesResponse?.data?.courses) {
-            const allCourses = coursesResponse.data.courses as { id: number; is_published: boolean }[];
-            courseIds = allCourses
+          const allCourses = coursesResponse.data.courses as { id: number; is_published: boolean }[];
+          courseIds = allCourses
             .filter(c => c.is_published && c.id)
             .map(c => c.id);
         }
-        
+
         // Use default behavior if listCourses fails or returns empty, but prefer ALL
         if (courseIds.length === 0 && payload.courseIds) {
-             // fallback to payload if fetch fails
-             courseIds = payload.courseIds.map(id => Number(id)).filter(n => !isNaN(n));
+          // fallback to payload if fetch fails
+          courseIds = payload.courseIds.map(id => Number(id)).filter(n => !isNaN(n));
         }
 
         await this.handleTeachableRegistration(user, password, courseIds);
@@ -159,7 +159,7 @@ export class PaymentService {
     }
   }
 
-  async confirmAndProcess(id: string, clientTxId: string, userEmail?: string, userName?: string): Promise<any> {
+  async confirmAndProcess(id: string, clientTxId: string, userEmail?: string, userName?: string): Promise<{ user: IUser; isNew: boolean }> {
     // A. Llamar a Payphone desde el Backend (Servidor a Servidor es 100% seguro)
     let payphoneData;
     try {
@@ -178,7 +178,8 @@ export class PaymentService {
       );
       payphoneData = response.data;
     } catch (error: any) {
-      console.error("[Payment] Error conectando con Payphone:", error.response?.data || error.message);
+      const err = error as { response?: { data?: unknown }; message?: string };
+      console.error("[Payment] Error conectando con Payphone:", err.response?.data || err.message);
       throw new Error("Error de comunicación con pasarela de pagos.");
     }
 
@@ -208,67 +209,68 @@ export class PaymentService {
   }
 
   // Helper to enroll existing user in list of courses
-  private async enrollUserInCourses(user: any, password: string | undefined, courseIds: number[]) {
-      if (!user.teachableUserId) {
-          // Attempt to find or create teachable user if missing
-          const teachableService = new TeachableUsersService();
-          // We might not have password for existing user, so we can't create easily if they don't exist.
-          // Assuming they might exist or we skip. 
-          // However, if we are upgrading, we really want them enrolled.
-          // Let's try to sync user first.
-          if (!password) password = randomPassword(12); // Dummy password if we need to create
-          
-          // Check if we can find them? Teachable API doesn't have easy "find by email" in this SDK maybe?
-          // We will try create. If exists, it might fail or return existing?
-          // SDK `createUser` usually returns 422 if exists.
-          // For now, let's skip if no teachableUserId and assume handleTeachableRegistration logic is needed.
-           await this.handleTeachableRegistration(user, password, courseIds);
-           return;
-      }
-      
+  private async enrollUserInCourses(user: IUser & { save: () => Promise<IUser> }, password: string | undefined, courseIds: number[]) {
+    if (!user.teachableUserId) {
+      // Attempt to find or create teachable user if missing
       const teachableService = new TeachableUsersService();
-      for (const cid of courseIds) {
-        let enrolledRemotely = false;
-        try {
-          const body: EnrollUserBodyParam = { user_id: user.teachableUserId, course_id: cid };
-          await teachableService.enrollUser(body);
-          enrolledRemotely = true;
-        } catch (err) {
-            // ... error handling similar to handleTeachableRegistration
-             const status = (err as { status?: number }).status ?? (err as { response?: { status?: number } }).response?.status;
-             const rawMsg = (err as { data?: { message?: string }; message?: string }).data?.message ?? (err as { message?: string }).message ?? "";
-             const msg = typeof rawMsg === "string" ? rawMsg.toLowerCase() : "";
-             if (status === 422 || msg.includes("already enrolled")) {
-                enrolledRemotely = true;
-             } else {
-                console.error("Teachable enroll error (existing user)", { courseId: cid, error: err });
-             }
-        }
+      // We might not have password for existing user, so we can't create easily if they don't exist.
+      // Assuming they might exist or we skip. 
+      // However, if we are upgrading, we really want them enrolled.
+      // Let's try to sync user first.
+      if (!password) password = randomPassword(12); // Dummy password if we need to create
 
-        const exists = (user.courses || []).some((c: CourseAccess) => Number(c.teachableCourseId) === Number(cid));
-        if (enrolledRemotely && !exists) {
-            user.courses.push({ teachableCourseId: cid, status: "active", enrolledAt: new Date(), expiresAt: null, courseRef: null });
+      // Check if we can find them? Teachable API doesn't have easy "find by email" in this SDK maybe?
+      // We will try create. If exists, it might fail or return existing?
+      // SDK `createUser` usually returns 422 if exists.
+      // For now, let's skip if no teachableUserId and assume handleTeachableRegistration logic is needed.
+      await this.handleTeachableRegistration(user, password, courseIds);
+      return;
+    }
+
+    const teachableService = new TeachableUsersService();
+    for (const cid of courseIds) {
+      let enrolledRemotely = false;
+      try {
+        const body: EnrollUserBodyParam = { user_id: user.teachableUserId, course_id: cid };
+        await teachableService.enrollUser(body);
+        enrolledRemotely = true;
+      } catch (err) {
+        // ... error handling similar to handleTeachableRegistration
+        const status = (err as { status?: number }).status ?? (err as { response?: { status?: number } }).response?.status;
+        const rawMsg = (err as { data?: { message?: string }; message?: string }).data?.message ?? (err as { message?: string }).message ?? "";
+        const msg = typeof rawMsg === "string" ? rawMsg.toLowerCase() : "";
+        if (status === 422 || msg.includes("already enrolled")) {
+          enrolledRemotely = true;
+        } else {
+          console.error("Teachable enroll error (existing user)", { courseId: cid, error: err });
         }
       }
-      await user.save();
+
+      const exists = (user.courses || []).some((c: CourseAccess) => Number(c.teachableCourseId) === Number(cid));
+      if (enrolledRemotely && !exists) {
+        user.courses.push({ teachableCourseId: cid, status: "active", enrolledAt: new Date(), expiresAt: null, courseRef: null });
+      }
+    }
+    await user.save();
   }
 
-  private async handleTeachableRegistration(user: any, password: string, payloadCourseIds?: Array<number|string> | null) {
+  private async handleTeachableRegistration(user: IUser & { save: () => Promise<IUser> }, password: string, payloadCourseIds?: Array<number | string> | null) {
     const teachableService = new TeachableUsersService();
     let teachableUserId = user.teachableUserId;
 
     if (!teachableUserId) {
-        const createBody: CreateUserBodyParam = { name: user.name, email: user.email, password };
-        try {
-            const teachableRes = await teachableService.createUser(createBody);
-            teachableUserId = extractTeachableUserId(teachableRes);
-        } catch (error: any) {
-             // If user already exists in Teachable (422 or 409), we might need to search for them or just fail to get ID?
-             // The current flow relies on creating. If they exist in Teachable but not in our DB with ID, we have a disconnect.
-             // For now, let's assume success or if "taken", maybe we can't easily get the ID without "listUsers" filtering by email which is expensive.
-             // But let's proceed.
-             console.error("Error creating Teachable user", error);
-        }
+      const createBody: CreateUserBodyParam = { name: user.name, email: user.email, password };
+      try {
+        const teachableRes = await teachableService.createUser(createBody);
+        teachableUserId = extractTeachableUserId(teachableRes);
+      } catch (error: any) {
+        const err = error as Error;
+        // If user already exists in Teachable (422 or 409), we might need to search for them or just fail to get ID?
+        // The current flow relies on creating. If they exist in Teachable but not in our DB with ID, we have a disconnect.
+        // For now, let's assume success or if "taken", maybe we can't easily get the ID without "listUsers" filtering by email which is expensive.
+        // But let's proceed.
+        console.error("Error creating Teachable user", err);
+      }
     }
 
     if (typeof teachableUserId === "number") {
@@ -277,24 +279,24 @@ export class PaymentService {
 
       // Determine course IDs
       let courseIds: number[] = [];
-      
+
       // If payloadCourseIds is passed (which now might be ALL courses), use it.
       if (payloadCourseIds && Array.isArray(payloadCourseIds) && payloadCourseIds.length > 0) {
-          courseIds = payloadCourseIds.map(v => Number(v)).filter(n => Number.isFinite(n) && n > 0);
+        courseIds = payloadCourseIds.map(v => Number(v)).filter(n => Number.isFinite(n) && n > 0);
       } else {
-          // Fallback to Env vars if nothing passed (should not happen with new logic calling this)
-          const envCourseIdsRaw = process.env.TEACHABLE_DEFAULT_COURSE_IDS;
-          const envSingle = process.env.TEACHABLE_DEFAULT_COURSE_ID;
-          
-          if (envCourseIdsRaw && envCourseIdsRaw.trim() !== "") {
-            courseIds = envCourseIdsRaw.split(",").map(s => Number(s.trim())).filter(n => Number.isFinite(n) && n > 0);
-          } else if (envSingle && String(envSingle).trim() !== "") {
-            const single = Number(envSingle);
-            if (Number.isFinite(single) && single > 0) courseIds = [single];
-          }
-           const mandatoryCourseId = 2916425;
-           const prioritized = [mandatoryCourseId, ...courseIds.filter((id) => id !== mandatoryCourseId)];
-           courseIds = Array.from(new Set(prioritized)); // Removed .slice(0,3) to allow ALL
+        // Fallback to Env vars if nothing passed (should not happen with new logic calling this)
+        const envCourseIdsRaw = process.env.TEACHABLE_DEFAULT_COURSE_IDS;
+        const envSingle = process.env.TEACHABLE_DEFAULT_COURSE_ID;
+
+        if (envCourseIdsRaw && envCourseIdsRaw.trim() !== "") {
+          courseIds = envCourseIdsRaw.split(",").map(s => Number(s.trim())).filter(n => Number.isFinite(n) && n > 0);
+        } else if (envSingle && String(envSingle).trim() !== "") {
+          const single = Number(envSingle);
+          if (Number.isFinite(single) && single > 0) courseIds = [single];
+        }
+        const mandatoryCourseId = 2916425;
+        const prioritized = [mandatoryCourseId, ...courseIds.filter((id) => id !== mandatoryCourseId)];
+        courseIds = Array.from(new Set(prioritized)); // Removed .slice(0,3) to allow ALL
       }
 
 
@@ -314,7 +316,7 @@ export class PaymentService {
             console.error("Teachable enroll error", { courseId: cid, error: err });
           }
         }
-        
+
         const exists = (user.courses || []).some((c: CourseAccess) => Number(c.teachableCourseId) === Number(cid));
         if (enrolledRemotely && !exists) {
           user.courses.push({ teachableCourseId: cid, status: "active", enrolledAt: new Date(), expiresAt: null, courseRef: null });

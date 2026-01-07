@@ -4,7 +4,7 @@ import { Types } from "mongoose";
 import { models } from "../models";
 import { PointsService } from "../services/points";
 
-function isValidObjectId(id: any): boolean {
+function isValidObjectId(id: unknown): id is string {
   return typeof id === "string" && Types.ObjectId.isValid(id);
 }
 
@@ -21,7 +21,7 @@ export async function createComment(
       return;
     }
 
-    let parent: any = null;
+    let parent: string | null = null;
     if (parentId !== undefined && parentId !== null) {
       if (!isValidObjectId(parentId)) {
         res.status(HttpStatusCode.BadRequest).send({ message: "Invalid payload. A valid parentId is required." });
@@ -33,11 +33,11 @@ export async function createComment(
     const comment = await models.comments.create({
       user: new Types.ObjectId(userId),
       content: String(content).trim(),
-      parent,
+      parent: parent ? new Types.ObjectId(parent) : null,
       courseId: typeof courseId === "number" ? courseId : undefined,
       lectureId: typeof lectureId === "number" ? lectureId : undefined,
       videoId: typeof videoId === "number" ? videoId : undefined,
-    } as any);
+    });
 
     const pointsService = new PointsService();
     await pointsService.awardCommentPoint(userId);
@@ -48,8 +48,9 @@ export async function createComment(
     res.status(HttpStatusCode.Created).send({ message: "Comment created successfully.", comment });
     return;
   } catch (error: any) {
-    console.error("Error creating comment", error);
-    res.status(error?.status || HttpStatusCode.InternalServerError).send({ message: error?.message || "Internal server error." });
+    const err = error as { status?: number; message?: string };
+    console.error("Error creating comment", err);
+    res.status(err?.status || HttpStatusCode.InternalServerError).send({ message: err?.message || "Internal server error." });
     return;
   }
 }
