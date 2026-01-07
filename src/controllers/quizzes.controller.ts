@@ -3,6 +3,9 @@ import { HttpStatusCode } from "axios";
 import { Types } from "mongoose";
 import { models } from "../models";
 import type { IQuiz, QuizQuestion, IQuizSubmission } from "../types/quiz";
+import { PointsService } from "../services/points";
+
+const pointsService = new PointsService();
 
 type PublicQuizQuestion = Pick<QuizQuestion, "prompt" | "options">;
 type PublicQuiz = Omit<IQuiz, "questions"> & { questions: PublicQuizQuestion[] };
@@ -235,6 +238,9 @@ export async function submitQuiz(
       res.status(HttpStatusCode.Ok).send({ message: "Quiz not approved.", score, passed, retryAfterMs: Math.max(remainingMs, 0), retryAvailableAt: availableAt.toISOString(), submission });
       return;
     }
+
+    // Award 100 points
+    await pointsService.awardQuizPoints(userId, quizId);
 
     res.status(HttpStatusCode.Ok).send({ message: "Quiz approved.", score, passed, submission });
     return;
