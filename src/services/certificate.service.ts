@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { CloudinaryService } from "./cloudinary.service";
+import { FUDMASTER_COLORS } from "../constants/colors";
 
 export class CertificateService {
   private cloudinaryService: CloudinaryService;
@@ -17,9 +18,9 @@ export class CertificateService {
     certificateId: string
   ): Promise<string> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ 
-        layout: "landscape", 
-        size: "A4", 
+      const doc = new PDFDocument({
+        layout: "landscape",
+        size: "A4",
         margin: 0
       });
 
@@ -28,8 +29,7 @@ export class CertificateService {
       doc.on("end", async () => {
         const pdfBuffer = Buffer.concat(buffers);
         try {
-          // Upload to Cloudinary using uploadImage (handles PDFs with resource_type: "auto")
-          // We explicitly pass "jpg" format to ensure the URL ends in .jpg and renders immediately in browser
+          // Upload to Cloudinary using uploadImage
           const result = await this.cloudinaryService.uploadImage(pdfBuffer, "certificates", "jpg");
           resolve(result.secure_url);
         } catch (error) {
@@ -37,24 +37,24 @@ export class CertificateService {
         }
       });
 
-      // Background
-      doc.rect(0, 0, doc.page.width, doc.page.height).fill("#f9f9f9");
+      // Background - Using a slightly off-white for better readability on PDF
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill("#fcfcfc");
 
-      // Fudmasters Green Bottom (35% from bottom)
+      // Prefectura Blue Bottom (35% from bottom)
       const bottomHeight = doc.page.height * 0.35;
-      doc.rect(0, doc.page.height - bottomHeight, doc.page.width, bottomHeight).fill("#2abd94");
+      doc.rect(0, doc.page.height - bottomHeight, doc.page.width, bottomHeight).fill(FUDMASTER_COLORS.PRIMARY);
 
       // Watermarks (Relieve) - Subtle & Background
       doc.save();
       doc.fillColor("#bdc3c7");
-      doc.opacity(0.05); // Even more subtle (5%)
-      doc.fontSize(80); // Slightly larger
+      doc.opacity(0.04);
+      doc.fontSize(80);
       doc.font("Helvetica-Bold");
 
       // Top Right Watermark Text
       doc.text("CERTIFICADO", 0, 50, {
         align: "right",
-        width: doc.page.width - 50, // Padding from right
+        width: doc.page.width - 50,
       });
 
       // Bottom Left Watermark Text
@@ -67,78 +67,79 @@ export class CertificateService {
       const selloPath = path.join(process.cwd(), "src", "static", "sello", "sello.png");
       if (fs.existsSync(selloPath)) {
         const selloSize = 300;
-        doc.opacity(0.05); // Very subtle opacity for the background seals
+        doc.opacity(0.05);
 
-        // Sello 1: Bottom Right (Background style)
-        doc.image(selloPath, doc.page.width - selloSize + 50, doc.page.height - selloSize + 50, { 
-          width: selloSize 
+        // Sello 1: Bottom Right
+        doc.image(selloPath, doc.page.width - selloSize + 50, doc.page.height - selloSize + 50, {
+          width: selloSize
         });
 
-        // Sello 2: Top Left (Background style)
-        doc.image(selloPath, -50, -50, { 
-          width: selloSize 
+        // Sello 2: Top Left
+        doc.image(selloPath, -50, -50, {
+          width: selloSize
         });
       }
       doc.restore();
-      
+
       // Border
       doc.lineWidth(10);
-      doc.strokeColor("#000000");
+      doc.strokeColor(FUDMASTER_COLORS.SECONDARY);
       doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).stroke();
 
-      // Logo
-      const logoPath = path.join(process.cwd(), "src", "static", "logo-fudmaster.png");
+      // Logo - Prefectura
+      const logoPath = path.join(process.cwd(), "src", "static", "logo-prefectura.png");
       if (fs.existsSync(logoPath)) {
-        const logoWidth = 200;
+        const logoWidth = 220;
         const logoX = (doc.page.width - logoWidth) / 2;
         doc.image(logoPath, logoX, 40, { width: logoWidth });
       }
 
-      // Content with Absolute Positioning to ensure single page
+      // Content
       const centerX = 0;
       const pageWidth = doc.page.width;
+      const black = "#000000";
 
-      doc.fillColor("#000000").fontSize(40).font("Helvetica-Bold").text("CERTIFICADO DE FINALIZACIÓN", centerX, 140, { align: "center", width: pageWidth });
-      
-      doc.fillColor("#000000").fontSize(20).font("Helvetica-Bold").text("Se certifica que", centerX, 190, { align: "center", width: pageWidth });
-      
-      doc.fillColor("#000000").fontSize(35).font("Helvetica-Bold").text(studentName.toUpperCase(), centerX, 220, { align: "center", width: pageWidth });
-      
-      doc.fillColor("#000000").fontSize(20).font("Helvetica-Bold").text("ha completado con éxito el curso", centerX, 270, { align: "center", width: pageWidth });
-      
-      doc.fillColor("#000000").fontSize(30).font("Helvetica-Bold").text(courseName, centerX, 300, { align: "center", width: pageWidth });
-      
-      doc.fillColor("#000000").fontSize(15).font("Helvetica-Bold").text(`Fecha: ${date.toLocaleDateString("es-ES")}`, centerX, 350, { align: "center", width: pageWidth });
-      
-      // Signatures - Positioned below the date
-      const signatureY = 400;
-      const signatureWidth = 120;
-      
-      // Luis Signature (Left)
+      doc.fillColor(black).fontSize(40).font("Helvetica-Bold").text("CERTIFICADO DE FINALIZACIÓN", centerX, 140, { align: "center", width: pageWidth });
+
+      doc.fillColor(black).fontSize(20).font("Helvetica").text("Se certifica que", centerX, 195, { align: "center", width: pageWidth });
+
+      doc.fillColor(FUDMASTER_COLORS.PRIMARY).fontSize(35).font("Helvetica-Bold").text(studentName.toUpperCase(), centerX, 225, { align: "center", width: pageWidth });
+
+      doc.fillColor(black).fontSize(18).font("Helvetica").text("ha completado con éxito el curso", centerX, 275, { align: "center", width: pageWidth });
+
+      doc.fillColor(black).fontSize(30).font("Helvetica-Bold").text(courseName, centerX, 305, { align: "center", width: pageWidth });
+
+      // Date - Moved down to avoid overlap
+      doc.fillColor(black).fontSize(14).font("Helvetica").text(`Fecha de emisión: ${date.toLocaleDateString("es-ES")}`, centerX, 385, { align: "center", width: pageWidth });
+
+      // Signatures
+      const signatureY = 430;
+      const signatureWidth = 140;
+      const textWhite = FUDMASTER_COLORS.WHITE;
+
+      // Left Signature (Prefectura Entity)
       const luisSignaturePath = path.join(process.cwd(), "src", "static", "signatures", "luis", "luis-signature.png");
       if (fs.existsSync(luisSignaturePath)) {
         const luisX = (pageWidth / 4) - (signatureWidth / 2);
-        doc.image(luisSignaturePath, luisX, signatureY, { width: signatureWidth });
-        
-        doc.fillColor("#000000").fontSize(12).font("Helvetica-Bold").text("Luis Reyes", luisX, signatureY + 60, { width: signatureWidth, align: "center" });
-        doc.fillColor("#000000").fontSize(10).font("Helvetica-Bold").text("CEO FudMaster", luisX, signatureY + 75, { width: signatureWidth, align: "center" });
+        doc.image(luisSignaturePath, luisX, signatureY - 20, { width: signatureWidth });
+
+        doc.fillColor(textWhite).fontSize(12).font("Helvetica-Bold").text("Luis Reyes", luisX, signatureY + 45, { width: signatureWidth, align: "center" });
+        doc.fillColor(textWhite).fontSize(10).font("Helvetica").text("Prefectura del Guayas", luisX, signatureY + 60, { width: signatureWidth, align: "center" });
       }
 
-      // Mauro Signature (Right)
+      // Right Signature (Prefectura Entity)
       const mauroSignaturePath = path.join(process.cwd(), "src", "static", "signatures", "mauro", "mauro-signature.png");
       if (fs.existsSync(mauroSignaturePath)) {
-        const mauroSignatureWidth = 180; // Increased size
+        const mauroSignatureWidth = 180;
         const mauroX = (pageWidth * 3 / 4) - (mauroSignatureWidth / 2);
-        // Adjusted Y to be level with Luis (removed -15 offset)
-        doc.image(mauroSignaturePath, mauroX, signatureY, { width: mauroSignatureWidth });
-        
-        doc.fillColor("#000000").fontSize(12).font("Helvetica-Bold").text("Mauro Salgán", mauroX, signatureY + 60, { width: mauroSignatureWidth, align: "center" });
-        doc.fillColor("#000000").fontSize(10).font("Helvetica-Bold").text("COO FudMaster", mauroX, signatureY + 75, { width: mauroSignatureWidth, align: "center" });
+        doc.image(mauroSignaturePath, mauroX, signatureY - 20, { width: mauroSignatureWidth });
+
+        doc.fillColor(textWhite).fontSize(12).font("Helvetica-Bold").text("Mauro Salgán", mauroX, signatureY + 45, { width: mauroSignatureWidth, align: "center" });
+        doc.fillColor(textWhite).fontSize(10).font("Helvetica").text("Prefectura del Guayas", mauroX, signatureY + 60, { width: mauroSignatureWidth, align: "center" });
       }
 
-
       // Verification Code
-      doc.fillColor("#000000").fontSize(10).font("Helvetica-Bold").text(`Verification Code: ${certificateId}`, centerX, 550, { align: "center", width: pageWidth });
+      doc.fillColor(textWhite).fontSize(9).font("Helvetica").text(`ID de Verificación: ${certificateId}`, centerX, 560, { align: "center", width: pageWidth });
 
       doc.end();
     });

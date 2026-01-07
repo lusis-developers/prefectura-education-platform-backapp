@@ -1,16 +1,22 @@
 export const FUDMASTER_COLORS = {
-  PINK: "#DA4167",
-  DARK: "#010D27",
-  LIGHT: "#f5f3ef",
-  BLUE: "#0a81d1",
-  ORANGE: "#F96E46",
-  PURPLE: "#7F5A83",
-  PRIMARY: "#010D27",
-  SECONDARY: "#2BBB92",
+  // New Prefectura Palette
+  THEME_BG_MAIN: "#111613",
+  THEME_BG_CARD: "#1A2421",
+  THEME_ACCENT: "#2563EB",
+  THEME_ACCENT_DARK: "#1E3A8A",
+  THEME_TEXT_MAIN: "#E2E8F0",
+  THEME_TEXT_SEC: "#94A3B8",
+
+  PRIMARY: "#2563EB",
+  SECONDARY: "#1E3A8A",
+  BACKGROUND: "#111613",
+  SURFACE: "#1A2421",
+
+  TEXT_LIGHT: "#E2E8F0",
+  TEXT_MUTED: "#94A3B8",
+
   WHITE: "#ffffff",
-  TEXT_LIGHT: "#f5f5f5",
-  GREEN: "#2BBB92",
-  OVERLAY_PURPLE: "rgba(10, 129, 209, 0.1)", // Based on BLUE: #0a81d1
+  BLACK: "#000000",
 
   // Alert colors
   ALERT_WARNING: "#f59e0b",
