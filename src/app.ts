@@ -18,7 +18,7 @@ export default function createApp() {
     "http://localhost:5174",
     "http://localhost:8101",
     "https://fudmaster-testing-frontend.fudmaster.com.ec",
-    "prefectura-online-education-site.netlify.app",
+    "https://prefectura-online-education-site.netlify.app",
     "https://fudmaster.com.ec"
   ];
 
