@@ -9,7 +9,6 @@ async function main() {
 
   await dbConnect();
 
-  await ensureDefaultCareer();
 
   initializeSchedulers();
 
@@ -26,15 +25,3 @@ async function main() {
 
 main();
 
-async function ensureDefaultCareer(): Promise<void> {
-  try {
-    const name = "FudMasters Growth Essentials";
-    const description = "A cohesive path covering Meta Ads setup, differentiated cost fundamentals, brand humanization basics, and lean validation for new products.";
-    const courseIds = [2916425, 2917269, 2917339, 2917848];
-    const existing = await models.careers.findOne({ name }).lean();
-    if (existing) return;
-    await models.careers.create({ name, description, imageUrl: null, courseIds, isActive: true });
-  } catch (error) {
-    console.error("Error ensuring default career", error);
-  }
-}
