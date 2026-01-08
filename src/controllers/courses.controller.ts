@@ -121,10 +121,43 @@ export async function getEnrolledCoursesForUser(
 async function resolveTeachableUserId(userId?: string, teachableUserId?: unknown): Promise<number | undefined> {
   const parsedTeachable = parsePositiveNumber(teachableUserId);
   if (parsedTeachable) return parsedTeachable;
+
   if (userId && Types.ObjectId.isValid(userId)) {
-    const user = await models.users.findById(userId).lean();
-    const id = parsePositiveNumber(user?.teachableUserId);
+    const user = await models.users.findById(userId);
+    if (!user) return undefined;
+
+    const id = parsePositiveNumber(user.teachableUserId);
     if (id) return id;
+
+    // Proactive Sync: If user exists locally but has no teachableUserId, try to ensure they exist in Teachable
+    try {
+      const teachableService = new TeachableUsersService();
+      // Note: We don't have the plain text password here, but we can attempt to create them. 
+      // If they already exist, Teachable might return an error or we might need a more complex lookup.
+      // However, for most flows (registration, Google Login), the user is created with a password.
+      // For manually created users, they might be missing this link.
+      console.log(`Proactively syncing user ${user.email} with Teachable...`);
+
+      // If we don't have a password to send, Teachable API might fail if the user doesn't exist yet.
+      // But we can try with a default or see if we can just "find" them (though Teachable API list users is paged and slow).
+      // For now, let's just attempt a creation with a random password if missing, 
+      // which is better than returning undefined and breaking the UI.
+      const tempPwd = Math.random().toString(36).slice(-12);
+      const resp = await teachableService.createUser({
+        name: user.name,
+        email: user.email,
+        password: tempPwd
+      });
+
+      const newId = (resp as any)?.data?.id ?? (resp as any)?.data?.user?.id;
+      if (newId) {
+        user.teachableUserId = newId;
+        await user.save();
+        return newId;
+      }
+    } catch (error) {
+      console.error(`Proactive Teachable sync failed for user ${user._id}:`, error);
+    }
   }
   return undefined;
 }

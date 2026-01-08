@@ -1,10 +1,9 @@
 import { Router } from "express";
-import { createCareer, getCareers, getCareerById, addCourseToCareer, removeCourseFromCareer, assignCareerToUser, enrollUserToCareerCourses, getUserCareers, createDefaultCareer } from "../controllers/careers.controller";
+import { createCareer, getCareers, getCareerById, addCourseToCareer, removeCourseFromCareer, assignCareerToUser, enrollUserToCareerCourses, getUserCareers } from "../controllers/careers.controller";
 
 const careersRouter = Router();
 
 careersRouter.post("/", createCareer);
-careersRouter.post("/default", createDefaultCareer);
 careersRouter.get("/", getCareers);
 careersRouter.get("/:careerId", getCareerById);
 careersRouter.post("/:careerId/courses/:courseId", addCourseToCareer);

@@ -62,36 +62,6 @@ export async function getCareers(
   }
 }
 
-export async function createDefaultCareer(
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-): Promise<void> {
-  try {
-    const name = "FudMasters Growth Essentials";
-    const description = "A cohesive path covering Meta Ads setup, differentiated cost fundamentals, brand humanization basics, and lean validation for new products.";
-    const courseIds = [2916425, 2917269, 2917339, 2917848];
-
-    const existing = await models.careers.findOne({ name });
-    if (existing) {
-      const set = new Set<number>([...((existing as any).courseIds || []), ...courseIds]);
-      (existing as any).courseIds = Array.from(set);
-      (existing as any).description = description;
-      (existing as any).isActive = true;
-      await (existing as any).save();
-      res.status(HttpStatusCode.Ok).send({ message: "Career updated successfully.", career: existing });
-      return;
-    }
-
-    const created = await models.careers.create({ name, description, imageUrl: null, courseIds, isActive: true });
-    res.status(HttpStatusCode.Created).send({ message: "Career created successfully.", career: created });
-    return;
-  } catch (error: any) {
-    console.error("Error creating default career", error);
-    res.status(error?.status || HttpStatusCode.InternalServerError).send({ message: error?.message || "Internal server error." });
-    return;
-  }
-}
 
 export async function getCareerById(
   req: Request,
